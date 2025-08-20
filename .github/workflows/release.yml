@@ -1,5 +1,5 @@
 # 定义工作流名称
-name: build many lvgl_micropython
+name: build many lvgl_micropython2
 
 # 触发条件：仅手动触发
 on:
