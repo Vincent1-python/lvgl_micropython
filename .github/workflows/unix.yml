@@ -164,14 +164,8 @@ jobs:
         git submodule update --init --depth 1 --jobs 4 -- lib/esp-idf
         cd lib/esp-idf
         # 按需浅克隆 ESP-IDF 自身需要的子模块
-        git submodule update --init --depth 1 --jobs 4 -- \
-          components/bt/host/nimble/nimble \
-          components/esp_wifi \
-          components/esptool_py/esptool \
-          components/lwip/lwip \
-          components/mbedtls/mbedtls \
-          components/bt/controller/lib_esp32 \
-          components/bt/controller/lib_esp32c3_family
+        
+        git submodule update --init --recursive
         cd ../..
         # 安装 ESP-IDF 全部工具链（all 代表支持所有芯片）
         export "IDF_PATH=$GITHUB_WORKSPACE/lib/esp-idf"
