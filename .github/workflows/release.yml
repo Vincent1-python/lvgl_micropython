@@ -129,7 +129,7 @@ jobs:
         opts+=("DISPLAY=${{ matrix.display }}")
         [[ -n "${{ matrix.indev }}" ]] && opts+=("INDEV=${{ matrix.indev }}")
         # 调用 make.py 进行编译
-        python3 make.py esp32 "${opts[@]}" --enable-uart-repl=n --enable-jtag-repl=n --enable-cdc-repl=y
+        python3 make.py esp32 "${opts[@]}" --enable-uart-repl=n --enable-jtag-repl=y --enable-cdc-repl=n
     # 9. 收集固件到统一目录
     - name: 9.重命名并收集所有固件到 ~/artifacts
       run: |
