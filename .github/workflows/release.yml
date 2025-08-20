@@ -54,46 +54,6 @@ jobs:
             flash_size: 4
             display: ili9341
             indev: xpt2046
-          - board: ESP32_GENERIC_C3
-            variant: ""
-            flash_size: 4
-            display: ili9488
-            indev: gt911
-          - board: ESP32_GENERIC_C3
-            variant: ""
-            flash_size: 4
-            display: st7789
-            indev: ""
-          - board: ESP32_GENERIC_C3
-            variant: ""
-            flash_size: 4
-            display: st7735
-            indev: ""
-          - board: ESP32_GENERIC_C3
-            variant: ""
-            flash_size: 4
-            display: ili9341
-            indev: xpt2046
-          - board: ESP32_GENERIC_C6
-            variant: ""
-            flash_size: 4
-            display: ili9488
-            indev: gt911
-          - board: ESP32_GENERIC_C6
-            variant: ""
-            flash_size: 4
-            display: st7789
-            indev: ""
-          - board: ESP32_GENERIC_C6
-            variant: ""
-            flash_size: 4
-            display: st7735
-            indev: ""
-          - board: ESP32_GENERIC_C6
-            variant: ""
-            flash_size: 4
-            display: ili9341
-            indev: xpt2046
           
 
     steps:
