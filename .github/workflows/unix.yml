@@ -30,6 +30,11 @@ jobs:
           - board: ESP32_GENERIC_C3
             variant: ""
             flash_size: 4
+            display: st7365
+            indev: gt911
+          - board: ESP32_GENERIC_C3
+            variant: ""
+            flash_size: 4
             display: st7789
             indev: ""
           - board: ESP32_GENERIC_C6
@@ -52,6 +57,11 @@ jobs:
             flash_size: 4
             display: st7789
             indev: ""
+          - board: ESP32_GENERIC_C6
+            variant: ""
+            flash_size: 4
+            display: st7365
+            indev: gt911
           - board: ESP32_GENERIC
             variant: SPIRAM
             flash_size: 16
@@ -71,6 +81,11 @@ jobs:
             variant: SPIRAM
             flash_size: 16
             display: ili9488
+            indev: gt911
+          - board: ESP32_GENERIC
+            variant: SPIRAM
+            flash_size: 16
+            display: st7365
             indev: gt911
           - board: ESP32_GENERIC
             variant: ""
@@ -94,6 +109,11 @@ jobs:
             indev: gt911
           - board: ESP32_GENERIC
             variant: ""
+            flash_size: 4
+            display: st7365
+            indev: gt911
+          - board: ESP32_GENERIC
+            variant: ""
             flash_size: 8
             display: st7735
             indev: ""
@@ -111,6 +131,11 @@ jobs:
             variant: ""
             flash_size: 8
             display: ili9488
+            indev: gt911
+          - board: ESP32_GENERIC
+            variant: ""
+            flash_size: 8
+            display: st7365
             indev: gt911
 
     steps:
