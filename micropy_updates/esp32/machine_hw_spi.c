@@ -565,7 +565,7 @@ void mp_machine_hw_spi_bus_initilize(mp_machine_hw_spi_bus_obj_t *bus)
         .data7_io_num = (int)mp_obj_get_int(bus->data7),
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .flags = flags,
+        //.flags = flags,
         .max_transfer_sz = SPI_LL_DMA_MAX_BIT_LEN / 8
     };
 
