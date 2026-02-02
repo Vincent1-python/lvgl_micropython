@@ -98,7 +98,7 @@ jobs:
         export "IDF_PATH=${GITHUB_WORKSPACE}/lib/esp-idf"
         . ./lib/esp-idf/export.sh
 
-        - name: Build ESP32_GENERIC_S3 OCT RAM/FLASH 16
+    - name: Build ESP32_GENERIC_S3 OCT RAM/FLASH 16
       run: python3 make.py esp32 BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT --flash-size=16 --octal-flash DISPLAY=all INDEV=all EXPANDER=all --enable-cdc-repl=y --enable-jtag-repl=n --ccache --no-scrub
     
 
