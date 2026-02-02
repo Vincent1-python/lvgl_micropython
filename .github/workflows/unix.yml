@@ -49,7 +49,7 @@ jobs:
         . ./lib/esp-idf/export.sh
 
     - name: Build ESP32_GENERIC_P4 C6_WIFI 16
-      run: python3 make.py esp32 BOARD=ESP32_GENERIC_P4 --flash-size=8 BOARD_VARIANT=C6_WIFI DISPLAY=all INDEV=all EXPANDER=all --ccache --no-scrub
+      run: python3 make.py esp32 BOARD=ESP32_GENERIC_P4 --flash-size=16 BOARD_VARIANT=C6_WIFI DISPLAY=all INDEV=all EXPANDER=all --ccache --no-scrub
     
 
     - uses: actions/upload-artifact@v5
@@ -99,7 +99,7 @@ jobs:
         . ./lib/esp-idf/export.sh
 
     - name: Build ESP32_GENERIC_S3 OCT RAM/FLASH 16
-      run: python3 make.py esp32 BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT --flash-size=16 --octal-flash DISPLAY=all INDEV=all EXPANDER=all --enable-cdc-repl=y --enable-jtag-repl=n --ccache --no-scrub
+      run: python3 make.py esp32 BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT --flash-size=16 DISPLAY=all INDEV=all EXPANDER=all --enable-cdc-repl=n --enable-jtag-repl=y --ccache --no-scrub
     
 
     - uses: actions/upload-artifact@v5
