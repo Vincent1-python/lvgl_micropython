@@ -99,7 +99,7 @@ jobs:
         . ./lib/esp-idf/export.sh
 
     - name: Build ESP32_GENERIC_S3 OCT RAM/FLASH 16
-      run: python3 make.py esp32 BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT --flash-size=16 DISPLAY=all INDEV=all EXPANDER=all --enable-cdc-repl=n --enable-jtag-repl=y --ccache --no-scrub
+      run: python3 make.py esp32 BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT --flash-size=16 DISPLAY=st77916 INDEV=cst816s --enable-cdc-repl=n --enable-jtag-repl=y --ccache --no-scrub
     
 
     - uses: actions/upload-artifact@v5
