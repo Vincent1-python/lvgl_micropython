@@ -45,16 +45,33 @@ def calibrate(indev, cal_data):
     width = indev._orig_width  # NOQA
     height = indev._orig_height  # NOQA
 
+    # coords = [
+    #     [20, 20],  # upper left
+    #     [width - 40, 20],  # upper right
+    #     [20, height - 40]  # lower left
+    # ]
+    # target_points = [
+    #     dict(x=30, y=30),  # upper left
+    #     dict(x=width - 30, y=30),  # upper right
+    #     dict(x=30, y=height - 30),  # lower left
+    # ]
+
+    from math import sin, cos, radians, floor
+
+    radius = width // 2
+    opposite = floor( sin(radians(30)) * (radius-30) )
+    adjacent = floor( cos(radians(30)) * (radius-30) )
+
     coords = [
-        [20, 20],  # upper left
-        [width - 40, 20],  # upper right
-        [20, height - 40]  # lower left
+        [radius            -10,                     20],  # upper left
+        [radius - adjacent -10, radius + opposite - 10],  # upper right
+        [radius + adjacent -10, radius + opposite - 10]  # lower left
     ]
 
     target_points = [
-        dict(x=30, y=30),  # upper left
-        dict(x=width - 30, y=30),  # upper right
-        dict(x=30, y=height - 30),  # lower left
+        dict(x=radius,          y=30),  # upper middle
+        dict(x=radius-adjacent, y=radius+opposite),  # upper right
+        dict(x=radius+adjacent, y=radius+opposite),  # lower left
     ]
 
     captured_points = [
