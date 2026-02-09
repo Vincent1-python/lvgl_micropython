@@ -1,8 +1,6 @@
-from micropython import const
-
 import time
 import lvgl as lv  # NOQA
-
+from display_driver_framework import BYTE_ORDER_BGR
 
 _CSC1 = const(0xF0)
 _CSC2 = const(0xF1)
@@ -56,663 +54,205 @@ _VCMOFNSET = const(0xDE)
 _GAMCTRP1 = const(0xE0)
 _GAMCTRN1 = const(0xE1)
 
+lcd_init_cmds = [
+    (0xF0, bytes([0x28]), 1, 0), # CSC1
+    (0xF2, bytes([0x28]), 1, 0), # CSC3
+    (0x73, bytes([0xF0]), 1, 0), # unknown
+    (0x7C, bytes([0xD1]), 1, 0), # unknown
+    (0x83, bytes([0xE0]), 1, 0), # unknown
+    (0x84, bytes([0x61]), 1, 0),
+    (0xF2, bytes([0x82]), 1, 0), # CSC3
+    (0xF0, bytes([0x00]), 1, 0), # CSC1
+    (0xF0, bytes([0x01]), 1, 0), # CSC1
+    (0xF1, bytes([0x01]), 1, 0), # CSC2
+    (0xB0, bytes([0x56]), 1, 0), # VRHPS
+    (0xB1, bytes([0x4D]), 1, 0), # VRHNS
+    (0xB2, bytes([0x24]), 1, 0), # VCOMS
+    (0xB4, bytes([0x87]), 1, 0), # GAMOPPS
+    (0xB5, bytes([0x44]), 1, 0), # STEP14S
+    (0xB6, bytes([0x8B]), 1, 0), # STEP23S
+    (0xB7, bytes([0x40]), 1, 0), # SBSTS
+    (0xB8, bytes([0x86]), 1, 0), # unknown
+    (0xBA, bytes([0x00]), 1, 0), # TCONS
+    (0xBB, bytes([0x08]), 1, 0), # RGBVBP
+    (0xBC, bytes([0x08]), 1, 0), # RGBHBP
+    (0xBD, bytes([0x00]), 1, 0), # RGBSET
+    (0xC0, bytes([0x80]), 1, 0), # FRCTRA1
+    (0xC1, bytes([0x10]), 1, 0), # FRCTRA2
+    (0xC2, bytes([0x37]), 1, 0), # FRCTRA3
+    (0xC3, bytes([0x80]), 1, 0), # FRCTRB1
+    (0xC4, bytes([0x10]), 1, 0), # FRCTRB2
+    (0xC5, bytes([0x37]), 1, 0), # FRCTRB3
+    (0xC6, bytes([0xA9]), 1, 0), # PWRCTRA1
+    (0xC7, bytes([0x41]), 1, 0), # PWRCTRA2
+    (0xC8, bytes([0x01]), 1, 0), # PWRCTRA3
+    (0xC9, bytes([0xA9]), 1, 0), # PWRCTRB1
+    (0xCA, bytes([0x41]), 1, 0), # PWRCTRB2
+    (0xCB, bytes([0x01]), 1, 0), # PWRCTRB3
+    (0xD0, bytes([0x91]), 1, 0), # RESSET1
+    (0xD1, bytes([0x68]), 1, 0), # RESSET2
+    (0xD2, bytes([0x68]), 1, 0), # RESSET3
+    (0xF5, bytes([0x00, 0xA5]), 2, 0), # unknown
+    (0xDD, bytes([0x4F]), 1, 0), # VCMOFSET
+    (0xDE, bytes([0x4F]), 1, 0), # VCMOFNSET
+    (0xF1, bytes([0x10]), 1, 0), # CSC2
+    (0xF0, bytes([0x00]), 1, 0), # CSC1
+    (0xF0, bytes([0x02]), 1, 0), # CSC1
+    (0xE0, bytes([0xF0, 0x0A, 0x10, 0x09, 0x09, 0x36, 0x35, 0x33, 0x4A, 0x29, 0x15, 0x15, 0x2E, 0x34]), 14, 0), # GAMCTRP1
+    (0xE1, bytes([0xF0, 0x0A, 0x0F, 0x08, 0x08, 0x05, 0x34, 0x33, 0x4A, 0x39, 0x15, 0x15, 0x2D, 0x33]), 14, 0), # GAMCTRN1
+    (0xF0, bytes([0x10]), 1, 0), # CSC1
+    (0xF3, bytes([0x10]), 1, 0), # CSC4
+    (0xE0, bytes([0x07]), 1, 0), # GAMCTRP1
+    (0xE1, bytes([0x00]), 1, 0), # GAMCTRN1
+    (0xE2, bytes([0x00]), 1, 0), 
+    (0xE3, bytes([0x00]), 1, 0),
+    (0xE4, bytes([0xE0]), 1, 0),
+    (0xE5, bytes([0x06]), 1, 0),
+    (0xE6, bytes([0x21]), 1, 0),
+    (0xE7, bytes([0x01]), 1, 0),
+    (0xE8, bytes([0x05]), 1, 0),
+    (0xE9, bytes([0x02]), 1, 0),
+    (0xEA, bytes([0xDA]), 1, 0),
+    (0xEB, bytes([0x00]), 1, 0),
+    (0xEC, bytes([0x00]), 1, 0),
+    (0xED, bytes([0x0F]), 1, 0),
+    (0xEE, bytes([0x00]), 1, 0),
+    (0xEF, bytes([0x00]), 1, 0),
+    (0xF8, bytes([0x00]), 1, 0),
+    (0xF9, bytes([0x00]), 1, 0),
+    (0xFA, bytes([0x00]), 1, 0),
+    (0xFB, bytes([0x00]), 1, 0),
+    (0xFC, bytes([0x00]), 1, 0),
+    (0xFD, bytes([0x00]), 1, 0),
+    (0xFE, bytes([0x00]), 1, 0),
+    (0xFF, bytes([0x00]), 1, 0),
+    (0x60, bytes([0x40]), 1, 0), 
+    (0x61, bytes([0x04]), 1, 0),
+    (0x62, bytes([0x00]), 1, 0),
+    (0x63, bytes([0x42]), 1, 0),
+    (0x64, bytes([0xD9]), 1, 0),
+    (0x65, bytes([0x00]), 1, 0),
+    (0x66, bytes([0x00]), 1, 0),
+    (0x67, bytes([0x00]), 1, 0),
+    (0x68, bytes([0x00]), 1, 0),
+    (0x69, bytes([0x00]), 1, 0),
+    (0x6A, bytes([0x00]), 1, 0),
+    (0x6B, bytes([0x00]), 1, 0),
+    (0x70, bytes([0x40]), 1, 0),
+    (0x71, bytes([0x03]), 1, 0),
+    (0x72, bytes([0x00]), 1, 0),
+    (0x73, bytes([0x42]), 1, 0),
+    (0x74, bytes([0xD8]), 1, 0),
+    (0x75, bytes([0x00]), 1, 0),
+    (0x76, bytes([0x00]), 1, 0),
+    (0x77, bytes([0x00]), 1, 0),
+    (0x78, bytes([0x00]), 1, 0),
+    (0x79, bytes([0x00]), 1, 0),
+    (0x7A, bytes([0x00]), 1, 0),
+    (0x7B, bytes([0x00]), 1, 0),
+    (0x80, bytes([0x48]), 1, 0),
+    (0x81, bytes([0x00]), 1, 0),
+    (0x82, bytes([0x06]), 1, 0),
+    (0x83, bytes([0x02]), 1, 0),
+    (0x84, bytes([0xD6]), 1, 0),
+    (0x85, bytes([0x04]), 1, 0),
+    (0x86, bytes([0x00]), 1, 0),
+    (0x87, bytes([0x00]), 1, 0),
+    (0x88, bytes([0x48]), 1, 0),
+    (0x89, bytes([0x00]), 1, 0),
+    (0x8A, bytes([0x08]), 1, 0),
+    (0x8B, bytes([0x02]), 1, 0),
+    (0x8C, bytes([0xD8]), 1, 0),
+    (0x8D, bytes([0x04]), 1, 0),
+    (0x8E, bytes([0x00]), 1, 0),
+    (0x8F, bytes([0x00]), 1, 0),
+    (0x90, bytes([0x48]), 1, 0),
+    (0x91, bytes([0x00]), 1, 0),
+    (0x92, bytes([0x0A]), 1, 0),
+    (0x93, bytes([0x02]), 1, 0),
+    (0x94, bytes([0xDA]), 1, 0),
+    (0x95, bytes([0x04]), 1, 0),
+    (0x96, bytes([0x00]), 1, 0),
+    (0x97, bytes([0x00]), 1, 0),
+    (0x98, bytes([0x48]), 1, 0),
+    (0x99, bytes([0x00]), 1, 0),
+    (0x9A, bytes([0x0C]), 1, 0),
+    (0x9B, bytes([0x02]), 1, 0),
+    (0x9C, bytes([0xDC]), 1, 0),
+    (0x9D, bytes([0x04]), 1, 0),
+    (0x9E, bytes([0x00]), 1, 0),
+    (0x9F, bytes([0x00]), 1, 0),
+    (0xA0, bytes([0x48]), 1, 0),
+    (0xA1, bytes([0x00]), 1, 0),
+    (0xA2, bytes([0x05]), 1, 0),
+    (0xA3, bytes([0x02]), 1, 0),
+    (0xA4, bytes([0xD5]), 1, 0),
+    (0xA5, bytes([0x04]), 1, 0),
+    (0xA6, bytes([0x00]), 1, 0),
+    (0xA7, bytes([0x00]), 1, 0),
+    (0xA8, bytes([0x48]), 1, 0),
+    (0xA9, bytes([0x00]), 1, 0),
+    (0xAA, bytes([0x07]), 1, 0),
+    (0xAB, bytes([0x02]), 1, 0),
+    (0xAC, bytes([0xD7]), 1, 0),
+    (0xAD, bytes([0x04]), 1, 0),
+    (0xAE, bytes([0x00]), 1, 0),
+    (0xAF, bytes([0x00]), 1, 0),
+    (0xB0, bytes([0x48]), 1, 0),
+    (0xB1, bytes([0x00]), 1, 0),
+    (0xB2, bytes([0x09]), 1, 0),
+    (0xB3, bytes([0x02]), 1, 0),
+    (0xB4, bytes([0xD9]), 1, 0),
+    (0xB5, bytes([0x04]), 1, 0),
+    (0xB6, bytes([0x00]), 1, 0),
+    (0xB7, bytes([0x00]), 1, 0),
+    (0xB8, bytes([0x48]), 1, 0),
+    (0xB9, bytes([0x00]), 1, 0),
+    (0xBA, bytes([0x0B]), 1, 0),
+    (0xBB, bytes([0x02]), 1, 0),
+    (0xBC, bytes([0xDB]), 1, 0),
+    (0xBD, bytes([0x04]), 1, 0),
+    (0xBE, bytes([0x00]), 1, 0),
+    (0xBF, bytes([0x00]), 1, 0),
+    (0xC0, bytes([0x10]), 1, 0),
+    (0xC1, bytes([0x47]), 1, 0),
+    (0xC2, bytes([0x56]), 1, 0),
+    (0xC3, bytes([0x65]), 1, 0),
+    (0xC4, bytes([0x74]), 1, 0),
+    (0xC5, bytes([0x88]), 1, 0),
+    (0xC6, bytes([0x99]), 1, 0),
+    (0xC7, bytes([0x01]), 1, 0),
+    (0xC8, bytes([0xBB]), 1, 0),
+    (0xC9, bytes([0xAA]), 1, 0),
+    (0xD0, bytes([0x10]), 1, 0),
+    (0xD1, bytes([0x47]), 1, 0),
+    (0xD2, bytes([0x56]), 1, 0),
+    (0xD3, bytes([0x65]), 1, 0),
+    (0xD4, bytes([0x74]), 1, 0),
+    (0xD5, bytes([0x88]), 1, 0),
+    (0xD6, bytes([0x99]), 1, 0),
+    (0xD7, bytes([0x01]), 1, 0),
+    (0xD8, bytes([0xBB]), 1, 0),
+    (0xD9, bytes([0xAA]), 1, 0),
+    (0xF3, bytes([0x01]), 1, 0), # CSC4
+    (0xF0, bytes([0x00]), 1, 0), # CSC1
+    (0x21, bytes([0x00]), 1, 0), # INVON: invert display colors
+    (0x11, bytes([0x00]), 1, 120), # SLPOUT: sleep out, delay 120ms
+    (0x29, bytes([0x00]), 1, 0), # DISPON: turn on display
+]
 
 def init(self):
+    print("Initializing Waveshare ESP32-S3 1.8 inch knob display - ST77916")
+
     param_buf = bytearray(14)
     param_mv = memoryview(param_buf)
 
-    param_buf[0] = 0x08
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x08
-    self.set_params(_CSC3, param_mv[:1])
-
-    param_buf[0] = 0x51
-    self.set_params(0x9B, param_mv[:1])
-
-    param_buf[0] = 0x53
-    self.set_params(0x86, param_mv[:1])
-
-    param_buf[0] = 0x80
-    self.set_params(_CSC3, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x01
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x01
-    self.set_params(_CSC2, param_mv[:1])
-
-    param_buf[0] = 0x54
-    self.set_params(_VRHPS, param_mv[:1])
-
-    param_buf[0] = 0x3F
-    self.set_params(_VRHNS, param_mv[:1])
-
-    param_buf[0] = 0x2A
-    self.set_params(_VCOMS, param_mv[:1])
-
-    param_buf[0] = 0x46
-    self.set_params(_GAMOPPS, param_mv[:1])
-
-    param_buf[0] = 0x34
-    self.set_params(_STEP14S, param_mv[:1])
-
-    param_buf[0] = 0xD5
-    self.set_params(_STEP23S, param_mv[:1])
-
-    param_buf[0] = 0x30
-    self.set_params(_SBSTS, param_mv[:1])
-
-    param_buf[0] = 0x04
-    self.set_params(0xB8, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_TCONS, param_mv[:1])
-
-    param_buf[0] = 0x08
-    self.set_params(_RGBVBP, param_mv[:1])
-
-    param_buf[0] = 0x08
-    self.set_params(_RGBHBP, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_RGBSET, param_mv[:1])
-
-    param_buf[0] = 0x80
-    self.set_params(_FRCTRA1, param_mv[:1])
-
-    param_buf[0] = 0x10
-    self.set_params(_FRCTRA2, param_mv[:1])
-
-    param_buf[0] = 0x37
-    self.set_params(_FRCTRA3, param_mv[:1])
-
-    param_buf[0] = 0x80
-    self.set_params(_FRCTRB1, param_mv[:1])
-
-    param_buf[0] = 0x10
-    self.set_params(_FRCTRB2, param_mv[:1])
-
-    param_buf[0] = 0x37
-    self.set_params(_FRCTRB3, param_mv[:1])
-
-    param_buf[0] = 0xA9
-    self.set_params(_PWRCTRA1, param_mv[:1])
-
-    param_buf[0] = 0x41
-    self.set_params(_PWRCTRA2, param_mv[:1])
-
-    param_buf[0] = 0x51
-    self.set_params(_PWRCTRA3, param_mv[:1])
-
-    param_buf[0] = 0xA9
-    self.set_params(_PWRCTRB1, param_mv[:1])
-
-    param_buf[0] = 0x41
-    self.set_params(_PWRCTRB2, param_mv[:1])
-
-    param_buf[0] = 0x51
-    self.set_params(_PWRCTRB3, param_mv[:1])
-
-    param_buf[0] = 0x91
-    self.set_params(_RESSET1, param_mv[:1])
-
-    param_buf[0] = 0x68
-    self.set_params(_RESSET2, param_mv[:1])
-
-    param_buf[0] = 0x69
-    self.set_params(_RESSET3, param_mv[:1])
-
-    param_buf[:2] = bytearray([0x00, 0xA5])
-    self.set_params(0xF5, param_mv[:2])
-
-    param_buf[0] = 0x35
-    self.set_params(_VCMOFSET, param_mv[:1])
-
-    param_buf[0] = 0x35
-    self.set_params(_VCMOFNSET, param_mv[:1])
-
-    param_buf[0] = 0x10
-    self.set_params(_CSC2, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[:14] = bytearray([0x70, 0x09, 0x12, 0x0C, 0x0B, 0x27, 0x38, 0x54, 0x4E, 0x19, 0x15, 0x15, 0x2C, 0x2F])
-    self.set_params(0xE0, param_mv[:14])
-
-    param_buf[:14] = bytearray([0x70, 0x08, 0x11, 0x0C, 0x0B, 0x27, 0x38, 0x43, 0x4C, 0x18, 0x14, 0x14, 0x2B, 0x2D])
-    self.set_params(0xE1, param_mv[:14])
-
-    param_buf[0] = 0x10
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x10
-    self.set_params(_CSC4, param_mv[:1])
-
-    param_buf[0] = 0x0A
-    self.set_params(0xE0, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xE1, param_mv[:1])
-
-    param_buf[0] = 0x0B
-    self.set_params(0xE2, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xE3, param_mv[:1])
-
-    param_buf[0] = 0xE0
-    self.set_params(0xE4, param_mv[:1])
-
-    param_buf[0] = 0x06
-    self.set_params(0xE5, param_mv[:1])
-
-    param_buf[0] = 0x21
-    self.set_params(0xE6, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xE7, param_mv[:1])
-
-    param_buf[0] = 0x05
-    self.set_params(0xE8, param_mv[:1])
-
-    param_buf[0] = 0x82
-    self.set_params(0xE9, param_mv[:1])
-
-    param_buf[0] = 0xDF
-    self.set_params(0xEA, param_mv[:1])
-
-    param_buf[0] = 0x89
-    self.set_params(0xEB, param_mv[:1])
-
-    param_buf[0] = 0x20
-    self.set_params(0xEC, param_mv[:1])
-
-    param_buf[0] = 0x14
-    self.set_params(0xED, param_mv[:1])
-
-    param_buf[0] = 0xFF
-    self.set_params(0xEE, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xEF, param_mv[:1])
-
-    param_buf[0] = 0xFF
-    self.set_params(0xF8, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xF9, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xFA, param_mv[:1])
-
-    param_buf[0] = 0x30
-    self.set_params(0xFB, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xFC, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xFD, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xFE, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xFF, param_mv[:1])
-
-    param_buf[0] = 0x42
-    self.set_params(0x60, param_mv[:1])
-
-    param_buf[0] = 0xE0
-    self.set_params(0x61, param_mv[:1])
-
-    param_buf[0] = 0x40
-    self.set_params(0x62, param_mv[:1])
-
-    param_buf[0] = 0x40
-    self.set_params(0x63, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0x64, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x65, param_mv[:1])
-
-    param_buf[0] = 0x40
-    self.set_params(0x66, param_mv[:1])
-
-    param_buf[0] = 0x03
-    self.set_params(0x67, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x68, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x69, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x6A, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x6B, param_mv[:1])
-
-    param_buf[0] = 0x42
-    self.set_params(0x70, param_mv[:1])
-
-    param_buf[0] = 0xE0
-    self.set_params(0x71, param_mv[:1])
-
-    param_buf[0] = 0x40
-    self.set_params(0x72, param_mv[:1])
-
-    param_buf[0] = 0x40
-    self.set_params(0x73, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0x74, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x75, param_mv[:1])
-
-    param_buf[0] = 0x40
-    self.set_params(0x76, param_mv[:1])
-
-    param_buf[0] = 0x03
-    self.set_params(0x77, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x78, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x79, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x7A, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x7B, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0x80, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x81, param_mv[:1])
-
-    param_buf[0] = 0x04
-    self.set_params(0x82, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0x83, param_mv[:1])
-
-    param_buf[0] = 0xDC
-    self.set_params(0x84, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x85, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x86, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x87, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0x88, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x89, param_mv[:1])
-
-    param_buf[0] = 0x06
-    self.set_params(0x8A, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0x8B, param_mv[:1])
-
-    param_buf[0] = 0xDE
-    self.set_params(0x8C, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x8D, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x8E, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x8F, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0x90, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x91, param_mv[:1])
-
-    param_buf[0] = 0x08
-    self.set_params(0x92, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0x93, param_mv[:1])
-
-    param_buf[0] = 0xE0
-    self.set_params(0x94, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x95, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x96, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x97, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0x98, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x99, param_mv[:1])
-
-    param_buf[0] = 0x0A
-    self.set_params(0x9A, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0x9B, param_mv[:1])
-
-    param_buf[0] = 0xE2
-    self.set_params(0x9C, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x9D, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x9E, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0x9F, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0xA0, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xA1, param_mv[:1])
-
-    param_buf[0] = 0x03
-    self.set_params(0xA2, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xDB
-    self.set_params(0xA4, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xA5, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xA6, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xA7, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0xA8, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xA9, param_mv[:1])
-
-    param_buf[0] = 0x05
-    self.set_params(0xAA, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0xAB, param_mv[:1])
-
-    param_buf[0] = 0xDD
-    self.set_params(0xAC, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xAD, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xAE, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xAF, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0xB0, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xB1, param_mv[:1])
-
-    param_buf[0] = 0x07
-    self.set_params(0xB2, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0xB3, param_mv[:1])
-
-    param_buf[0] = 0xDF
-    self.set_params(0xB4, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xB5, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xB6, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xB7, param_mv[:1])
-
-    param_buf[0] = 0x38
-    self.set_params(0xB8, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xB9, param_mv[:1])
-
-    param_buf[0] = 0x09
-    self.set_params(0xBA, param_mv[:1])
-
-    param_buf[0] = 0x02
-    self.set_params(0xBB, param_mv[:1])
-
-    param_buf[0] = 0xE1
-    self.set_params(0xBC, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xBD, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xBE, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xBF, param_mv[:1])
-
-    param_buf[0] = 0x22
-    self.set_params(0xC0, param_mv[:1])
-
-    param_buf[0] = 0xAA
-    self.set_params(0xC1, param_mv[:1])
-
-    param_buf[0] = 0x65
-    self.set_params(0xC2, param_mv[:1])
-
-    param_buf[0] = 0x74
-    self.set_params(0xC3, param_mv[:1])
-
-    param_buf[0] = 0x47
-    self.set_params(0xC4, param_mv[:1])
-
-    param_buf[0] = 0x56
-    self.set_params(0xC5, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xC6, param_mv[:1])
-
-    param_buf[0] = 0x88
-    self.set_params(0xC7, param_mv[:1])
-
-    param_buf[0] = 0x99
-    self.set_params(0xC8, param_mv[:1])
-
-    param_buf[0] = 0x33
-    self.set_params(0xC9, param_mv[:1])
-
-    param_buf[0] = 0x11
-    self.set_params(0xD0, param_mv[:1])
-
-    param_buf[0] = 0xAA
-    self.set_params(0xD1, param_mv[:1])
-
-    param_buf[0] = 0x65
-    self.set_params(0xD2, param_mv[:1])
-
-    param_buf[0] = 0x74
-    self.set_params(0xD3, param_mv[:1])
-
-    param_buf[0] = 0x47
-    self.set_params(0xD4, param_mv[:1])
-
-    param_buf[0] = 0x56
-    self.set_params(0xD5, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(0xD6, param_mv[:1])
-
-    param_buf[0] = 0x88
-    self.set_params(0xD7, param_mv[:1])
-
-    param_buf[0] = 0x99
-    self.set_params(0xD8, param_mv[:1])
-
-    param_buf[0] = 0x33
-    self.set_params(0xD9, param_mv[:1])
-
-    param_buf[0] = 0x01
-    self.set_params(_CSC4, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x01
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[0] = 0x01
-    self.set_params(_CSC2, param_mv[:1])
-
-    param_buf[0] = 0x0B
-    self.set_params(0xA0, param_mv[:1])
-
-    param_buf[0] = 0x2A
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x2B
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x2C
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x2D
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x2E
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x2F
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x30
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x31
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x32
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x33
-    self.set_params(0xA3, param_mv[:1])
-
-    param_buf[0] = 0xC3
-    self.set_params(0xA5, param_mv[:1])
-    time.sleep_ms(1)  # NOQA
-
-    param_buf[0] = 0x09
-    self.set_params(0xA0, param_mv[:1])
-
-    param_buf[0] = 0x10
-    self.set_params(_CSC2, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_CSC1, param_mv[:1])
-
-    param_buf[:4] = bytearray([0x00, 0x00, 0x01, 0x67])
-    self.set_params(_CASET, param_mv[:4])
-
-    param_buf[:4] = bytearray([0x01, 0x68, 0x01, 0x68])
-    self.set_params(_RASET, param_mv[:4])
-
-    param_buf[0] = 0x00
-    self.set_params(_RAMCLSETR, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_RAMCLSETG, param_mv[:1])
-
-    param_buf[0] = 0x00
-    self.set_params(_RAMCLSETB, param_mv[:1])
-
-    param_buf[0] = 0x01
-    self.set_params(_RAMCLACT, param_mv[:1])
-    time.sleep_ms(10)  # NOQA
-
-    param_buf[0] = 0x00
-    self.set_params(_RAMCLACT, param_mv[:1])
-
-    param_buf[:4] = bytearray([0x00, 0x00, 0x01, 0x67])
-    self.set_params(_CASET, param_mv[:4])
-
-    param_buf[:4] = bytearray([0x00, 0x00, 0x01, 0x67])
-    self.set_params(_RASET, param_mv[:4])
+    for cmd, params, param_len, delay in lcd_init_cmds:
+        param_buf[:param_len] = params
+
+        self.set_params(cmd, param_mv[:param_len])
+        if delay:
+            time.sleep_ms(delay)
 
     color_size = lv.color_format_get_size(self._color_space)
     if color_size == 2:  # NOQA
@@ -728,9 +268,12 @@ def init(self):
     param_buf[0] = pixel_format
     self.set_params(_COLMOD, param_mv[:1])
 
-    self.set_params(_INVON)
-    self.set_params(_TEOFF)
+    # Set MADCTL for RGB/BGR
+    if self._color_byte_order == BYTE_ORDER_BGR \
+        and self._color_space == lv.COLOR_FORMAT.RGB888:
+        madctl_param = 0x08  # BGR
+    else:
+        madctl_param = 0x00  # RGB
 
-    param_buf[0] = 0x00
-    self.set_params(_SLPOUT, param_mv[:1])
-    time.sleep_ms(120)  # NOQA
+    param_buf[0] = madctl_param
+    self.set_params(_MADCTL, param_mv[:1])
