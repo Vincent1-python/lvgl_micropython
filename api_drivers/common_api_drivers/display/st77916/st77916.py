@@ -1,11 +1,9 @@
 # Copyright (c) 2024 - 2025 Kevin G. Schlosser
 
 import display_driver_framework
-import rgb_display_framework  # NOQA
 from micropython import const  # NOQA
 import lcd_bus
 import lvgl as lv  # NOQA
-import gc
 
 
 STATE_HIGH = display_driver_framework.STATE_HIGH
@@ -15,8 +13,6 @@ STATE_PWM = display_driver_framework.STATE_PWM
 BYTE_ORDER_RGB = display_driver_framework.BYTE_ORDER_RGB
 BYTE_ORDER_BGR = display_driver_framework.BYTE_ORDER_BGR
 
-_WRITE_CMD = const(0x02)
-_WRITE_COLOR = const(0x32)
 
 _MADCTL_MH = const(0x04)  # Refresh 0=Left to Right, 1=Right to Left
 _MADCTL_BGR = const(0x08)  # BGR color order
@@ -29,8 +25,10 @@ _MADCTL_MY = const(0x80)  # 0=Top to Bottom, 1=Bottom to Top
 _RASET = const(0x2B)
 _CASET = const(0x2A)
 _RAMWR = const(0x2C)
-_RAMWRC = const(0x3C)
-_MADCTL = const(0x36)
+_MADCTL = const(0x32)
+
+_WRITE_CMD = const(0x02)
+_WRITE_COLOR = const(0x32)
 
 
 class ST77916(display_driver_framework.DisplayDriver):
@@ -83,47 +81,14 @@ class ST77916(display_driver_framework.DisplayDriver):
             self.__cmd_modifier = self.__quad_spi_cmd_modifier
             self.__color_cmd_modifier = self.__quad_spi_color_cmd_modifier
             _cmd_bits = 32
-
-            # we need to override the default handling for creating the frame
-            # buffer is using a quad spi bus. we don't want it to create
-            # partial buffers for the quad SPI display
-
-            buf_size = display_width * display_height * lv.color_format_get_size(color_space)
-
-            if frame_buffer1 is None:
-                gc.collect()
-
-                for flags in (
-                    lcd_bus.MEMORY_INTERNAL | lcd_bus.MEMORY_DMA,
-                    lcd_bus.MEMORY_SPIRAM | lcd_bus.MEMORY_DMA,
-                    lcd_bus.MEMORY_INTERNAL,
-                    lcd_bus.MEMORY_SPIRAM
-                ):
-                    try:
-                        frame_buffer1 = (
-                            data_bus.allocate_framebuffer(buf_size, flags)
-                        )
-
-                        if (flags | lcd_bus.MEMORY_DMA) == flags:
-                            frame_buffer2 = (
-                                data_bus.allocate_framebuffer(buf_size, flags)
-                            )
-
-                        break
-                    except MemoryError:
-                        frame_buffer1 = data_bus.free_framebuffer(frame_buffer1)  # NOQA
-
-                if frame_buffer1 is None:
-                    raise MemoryError(
-                        f'Unable to allocate memory for frame buffer ({buf_size})'  # NOQA
-                    )
-
-                if len(frame_buffer1) != buf_size:
-                    raise ValueError('incorrect framebuffer size')
         else:
             self.__cmd_modifier = self.__dummy_cmd_modifier
             self.__color_cmd_modifier = self.__dummy_cmd_modifier
             _cmd_bits = 8
+
+        self.__ramwr = self.__color_cmd_modifier(_RAMWR)
+        self.__caset = self.__cmd_modifier(_CASET)
+        self.__raset = self.__cmd_modifier(_RASET)
 
         super().__init__(
             data_bus,
@@ -150,3 +115,29 @@ class ST77916(display_driver_framework.DisplayDriver):
     def set_params(self, cmd, params=None):
         cmd = self.__cmd_modifier(cmd)
         self._data_bus.tx_param(cmd, params)
+
+    def _dummy_set_memory_location(self, *_, **__):  # NOQA
+        return self.__ramwr
+
+    def _set_memory_location(self, x1, y1, x2, y2):
+        param_buf = self._param_buf  # NOQA
+
+        param_buf[0] = (x1 >> 8) & 0xFF
+        param_buf[1] = x1 & 0xFF
+        param_buf[2] = (x2 >> 8) & 0xFF
+        param_buf[3] = x2 & 0xFF
+
+        self._data_bus.tx_param(self.__caset, self._param_mv)
+
+        # Page addresses
+        param_buf[0] = (y1 >> 8) & 0xFF
+        param_buf[1] = y1 & 0xFF
+        param_buf[2] = (y2 >> 8) & 0xFF
+        param_buf[3] = y2 & 0xFF
+
+        self._data_bus.tx_param(self.__raset, self._param_mv)
+
+        return self.__ramwr
+
+
+
