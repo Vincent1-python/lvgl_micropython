@@ -242,7 +242,6 @@ lcd_init_cmds = [
 ]
 
 def init(self):
-    print("Initializing Waveshare ESP32-S3 1.8 inch knob display - ST77916")
 
     param_buf = bytearray(14)
     param_mv = memoryview(param_buf)
