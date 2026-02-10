@@ -17,6 +17,9 @@ endif(ESP_PLATFORM)
 
 include(${CMAKE_CURRENT_LIST_DIR}/lcd_bus/micropython.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/lvgl/micropython.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/micropython_csi_camera/micropython.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/mp_jpeg/micropython.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/mp_esp_dl_models/src/micropython.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/lcd_utils/micropython.cmake)
 
 if(DEFINED ENV{FUSION})
